@@ -15,6 +15,7 @@ import org.springframework.kafka.streams.HeaderEnricher.Container;
 import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
+import com.joe.kafka.consumer.entity.Address;
 import com.joe.kafka.consumer.model.User;
 
 @EnableKafka
@@ -72,6 +73,32 @@ public class KafkaConfiguration {
     @Bean
     public StringJsonMessageConverter jsonConverter() {
         return new StringJsonMessageConverter();
+    }
+    
+    @Bean
+    public ConsumerFactory<String, Address> addressConsumerFactory() {
+    	
+    	JsonDeserializer<Address> deserializer = new JsonDeserializer<>(Address.class);
+        deserializer.setRemoveTypeHeaders(false);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeMapperForKey(true);
+
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, "group_address");
+        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
+        
+        return new DefaultKafkaConsumerFactory<>(config, new StringDeserializer(), deserializer);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Address> addressKafkaListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Address> factory = 
+        		new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(addressConsumerFactory());
+        return factory;
     }
 
 }
